@@ -9,6 +9,7 @@ You can use it to mock third-party APIs and test libraries that use `requests` i
 
 ```python
 from httmock import urlmatch, HTTMock
+import requests
 
 @urlmatch(netloc=r'(.*\.)?google\.com$')
 def google_mock(url, request):
