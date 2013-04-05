@@ -3,6 +3,15 @@ import unittest
 
 from httmock import urlmatch, HTTMock
 
+@urlmatch(scheme='swallow')
+def unmatched_scheme(url, request):
+    raise AssertionError('This is outrageous')
+
+
+@urlmatch(path=r'^never$')
+def unmatched_path(url, request):
+    raise AssertionError('This is outrageous')
+
 
 @urlmatch(netloc=r'(.*\.)?google\.com$', path=r'^/$')
 def google_mock(url, request):
@@ -25,10 +34,24 @@ class MockTest(unittest.TestCase):
             r = requests.get('http://domain.com/')
         self.assertTrue(isinstance(r, requests.Response))
 
-    def test_fallback(self):
+    def test_scheme_fallback(self):
+        with HTTMock(unmatched_scheme, any_mock):
+            r = requests.get('http://example.com/')
+        self.assertEqual(r.content, 'Hello from example.com')
+
+    def test_path_fallback(self):
+        with HTTMock(unmatched_path, any_mock):
+            r = requests.get('http://example.com/')
+        self.assertEqual(r.content, 'Hello from example.com')
+
+    def test_netloc_fallback(self):
         with HTTMock(google_mock, facebook_mock):
             r = requests.get('http://google.com/')
         self.assertEqual(r.content, 'Hello from Google')
         with HTTMock(google_mock, facebook_mock):
             r = requests.get('http://facebook.com/')
         self.assertEqual(r.content, 'Hello from Facebook')
+
+suite = unittest.TestSuite()
+loader = unittest.TestLoader()
+suite.addTests(loader.loadTestsFromTestCase(MockTest))

@@ -26,4 +26,5 @@ setup(
         'Operating System :: OS Independent'],
     install_requires=['requests'],
     license=LICENSE,
-    long_description=DESCRIPTION)
+    long_description=DESCRIPTION,
+    test_suite='tests.suite')
