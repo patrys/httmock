@@ -1,7 +1,7 @@
 import requests
 import unittest
 
-from httmock import urlmatch, HTTMock
+from httmock import urlmatch, with_httmock, HTTMock
 
 @urlmatch(scheme='swallow')
 def unmatched_scheme(url, request):
@@ -52,6 +52,15 @@ class MockTest(unittest.TestCase):
             r = requests.get('http://facebook.com/')
         self.assertEqual(r.content, 'Hello from Facebook')
 
+
+class DecoratorTest(unittest.TestCase):
+
+    @with_httmock(any_mock)
+    def test_decorator(self):
+        r = requests.get('http://example.com/')
+        self.assertEqual(r.content, 'Hello from example.com')
+
 suite = unittest.TestSuite()
 loader = unittest.TestLoader()
 suite.addTests(loader.loadTestsFromTestCase(MockTest))
+suite.addTests(loader.loadTestsFromTestCase(DecoratorTest))

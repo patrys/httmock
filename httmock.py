@@ -55,3 +55,17 @@ class HTTMock(object):
                 response._content = res
                 return response
             return res
+
+
+def with_httmock(*handlers):
+    mock = HTTMock(*handlers)
+
+    def decorator(func):
+        @wraps(func)
+	def inner(*args, **kwargs):
+            with mock:
+                return func(*args, **kwargs)
+
+        return inner
+
+    return decorator
