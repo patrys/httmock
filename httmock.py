@@ -30,13 +30,6 @@ def response(status_code=200, content='', headers=None, reason=None, elapsed=0,
         content = json.dumps(content)
     res._content = content
     res.headers = structures.CaseInsensitiveDict(headers or {})
-    hstr = '\n'.join(["%s: %s" % (key, headers[key]) for key in headers or ()])
-    raw = ['HTTP/1.0 %s OK' % res.status_code]
-    if hstr:
-        raw.append(hstr)
-    if content:
-        raw.append('\n' + content)
-    res.raw = '\n'.join(raw)
     res.reason = reason
     res.elapsed = datetime.timedelta(elapsed)
     if 'set-cookie' in res.headers:
