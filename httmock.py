@@ -15,6 +15,9 @@ class Headers(object):
     def __init__(self, res):
         self.headers = res.headers
 
+    def get_all(self, name, failobj=None):
+        return self.getheaders(name)
+
     def getheaders(self, name):
         return [self.headers.get(name)]
 

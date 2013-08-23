@@ -85,7 +85,7 @@ class ResponseTest(unittest.TestCase):
 
     def test_response_auto_json(self):
         r = response(0, {'foo':'bar'})
-        self.assertIsInstance(r.content, str)
+        self.assertTrue(isinstance(r.content, str))
         self.assertEqual(r.content, '{"foo": "bar"}')
 
     def test_response_status_code(self):
