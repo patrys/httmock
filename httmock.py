@@ -1,7 +1,48 @@
 from functools import wraps
+import datetime
+from requests import cookies
+import json
 import re
 import requests
-import urlparse
+from requests import structures
+try:
+    import urlparse
+except ImportError:
+    import urllib.parse as urlparse
+
+
+class Headers(object):
+    def __init__(self, res):
+        self.headers = res.headers
+
+    def get_all(self, name, failobj=None):
+        return self.getheaders(name)
+
+    def getheaders(self, name):
+        return [self.headers.get(name)]
+
+
+def response(status_code=200, content='', headers=None, reason=None, elapsed=0,
+             request=None):
+    res = requests.Response()
+    res.status_code = status_code
+    if isinstance(content, dict):
+        content = json.dumps(content)
+    res._content = content
+    res.headers = structures.CaseInsensitiveDict(headers or {})
+    res.reason = reason
+    res.elapsed = datetime.timedelta(elapsed)
+    if 'set-cookie' in res.headers:
+        res.cookies.extract_cookies(cookies.MockResponse(Headers(res)),
+                                    cookies.MockRequest(request))
+    return res
+
+
+def all_requests(func):
+    @wraps(func)
+    def inner(url, *args, **kwargs):
+        return func(url, *args, **kwargs)
+    return inner
 
 
 def urlmatch(scheme=None, netloc=None, path=None):
@@ -30,16 +71,17 @@ class HTTMock(object):
     """
     Acts as a context manager to allow mocking
     """
+    STATUS_CODE = 200
     def __init__(self, *handlers):
         self.handlers = handlers
 
     def __enter__(self):
         self._real_session_send = requests.Session.send
-
         def _fake_send(session, request, **kwargs):
-            return (self.intercept(request) or
-                    self._real_session_send(session, request, **kwargs))
-
+            response = self.intercept(request)
+            if isinstance(response, requests.Response):
+                return response
+            return self._real_session_send(session, request, **kwargs)
         requests.Session.send = _fake_send
         return self
 
@@ -49,12 +91,18 @@ class HTTMock(object):
     def intercept(self, request):
         url = urlparse.urlsplit(request.url)
         res = first_of(self.handlers, url, request)
-        if res is not None:
-            if isinstance(res, basestring):
-                response = requests.Response()
-                response._content = res
-                return response
+        if isinstance(res, requests.Response):
             return res
+        elif isinstance(res, dict):
+            return response(res.get('status_code'),
+                            res.get('content'),
+                            res.get('headers'),
+                            res.get('reason'),
+                            res.get('elapsed', 0),
+                            request)
+        obj = requests.Response()
+        obj._content = res
+        return obj
 
 
 def with_httmock(*handlers):
@@ -62,10 +110,8 @@ def with_httmock(*handlers):
 
     def decorator(func):
         @wraps(func)
-	def inner(*args, **kwargs):
+        def inner(*args, **kwargs):
             with mock:
                 return func(*args, **kwargs)
-
         return inner
-
     return decorator
