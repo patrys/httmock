@@ -3,6 +3,7 @@ import unittest
 
 from httmock import urlmatch, with_httmock, HTTMock
 
+
 @urlmatch(scheme='swallow')
 def unmatched_scheme(url, request):
     raise AssertionError('This is outrageous')
@@ -25,6 +26,13 @@ def facebook_mock(url, request):
 
 def any_mock(url, request):
     return 'Hello from %s' % (url.netloc,)
+
+
+def example_400_response(url, response):
+    r = requests.Response()
+    r.status_code = 400
+    r._content = 'Bad request.'
+    return r
 
 
 class MockTest(unittest.TestCase):
@@ -51,6 +59,12 @@ class MockTest(unittest.TestCase):
         with HTTMock(google_mock, facebook_mock):
             r = requests.get('http://facebook.com/')
         self.assertEqual(r.content, 'Hello from Facebook')
+
+    def test_400_response(self):
+        with HTTMock(example_400_response):
+            r = requests.get('http://example.com/')
+        self.assertEqual(r.status_code, 400)
+        self.assertEqual(r.content, 'Bad request.')
 
 
 class DecoratorTest(unittest.TestCase):

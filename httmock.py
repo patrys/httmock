@@ -37,8 +37,10 @@ class HTTMock(object):
         self._real_session_send = requests.Session.send
 
         def _fake_send(session, request, **kwargs):
-            return (self.intercept(request) or
-                    self._real_session_send(session, request, **kwargs))
+            res = self.intercept(request)
+            if res is None:
+                return self._real_session_send(session, request, **kwargs)
+            return res
 
         requests.Session.send = _fake_send
         return self
@@ -62,7 +64,7 @@ def with_httmock(*handlers):
 
     def decorator(func):
         @wraps(func)
-	def inner(*args, **kwargs):
+        def inner(*args, **kwargs):
             with mock:
                 return func(*args, **kwargs)
 
