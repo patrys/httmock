@@ -1,11 +1,16 @@
 httmock
 =======
 
-A mocking library for `requests`
+A mocking library for `requests`. You can use it to mock third-party APIs and 
+test libraries that use `requests` internally.
 
-------
+Installation
+------------
 
-You can use it to mock third-party APIs and test libraries that use `requests` internally:
+    pip install httmock
+    
+Usage
+-----
 
 ```python
 from httmock import urlmatch, HTTMock
