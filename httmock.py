@@ -40,22 +40,26 @@ def response(status_code=200, content='', headers=None, reason=None, elapsed=0,
 
 def all_requests(func):
     @wraps(func)
-    def inner(url, *args, **kwargs):
-        return func(url, *args, **kwargs)
+    def inner(*args, **kwargs):
+        return func(*args, **kwargs)
     return inner
 
 
 def urlmatch(scheme=None, netloc=None, path=None):
     def decorator(func):
         @wraps(func)
-        def inner(url, *args, **kwargs):
+        def inner(self_or_url, url_or_request, *args, **kwargs):
+            if isinstance(self_or_url, urlparse.SplitResult):
+                url = self_or_url
+            else:
+                url = url_or_request
             if scheme is not None and scheme != url.scheme:
                 return
             if netloc is not None and not re.match(netloc, url.netloc):
                 return
             if path is not None and not re.match(path, url.path):
                 return
-            return func(url, *args, **kwargs)
+            return func(self_or_url, url_or_request, *args, **kwargs)
         return inner
     return decorator
 
