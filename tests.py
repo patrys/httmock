@@ -95,6 +95,45 @@ class AllRequestsDecoratorTest(unittest.TestCase):
         self.assertEqual(r.content, 'Hello')
 
 
+class AllRequestsMethodDecoratorTest(unittest.TestCase):
+    @all_requests
+    def response_content(self, url, request):
+        return {'status_code': 200, 'content': 'Oh hai'}
+
+    def test_all_requests_response(self):
+        with HTTMock(self.response_content):
+            r = requests.get('https://foo_bar')
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.content, 'Oh hai')
+
+    @all_requests
+    def string_response_content(self, url, request):
+        return 'Hello'
+
+    def test_all_str_response(self):
+        with HTTMock(self.string_response_content):
+            r = requests.get('https://foo_bar')
+        self.assertEqual(r.content, 'Hello')
+
+
+class UrlMatchMethodDecoratorTest(unittest.TestCase):
+    @urlmatch(netloc=r'(.*\.)?google\.com$', path=r'^/$')
+    def google_mock(self, url, request):
+        return 'Hello from Google'
+
+    @urlmatch(scheme='http', netloc=r'(.*\.)?facebook\.com$')
+    def facebook_mock(self, url, request):
+        return 'Hello from Facebook'
+
+    def test_netloc_fallback(self):
+        with HTTMock(self.google_mock, facebook_mock):
+            r = requests.get('http://google.com/')
+        self.assertEqual(r.content, 'Hello from Google')
+        with HTTMock(self.google_mock, facebook_mock):
+            r = requests.get('http://facebook.com/')
+        self.assertEqual(r.content, 'Hello from Facebook')
+
+
 class ResponseTest(unittest.TestCase):
 
     def test_response_auto_json(self):
@@ -127,4 +166,6 @@ loader = unittest.TestLoader()
 suite.addTests(loader.loadTestsFromTestCase(MockTest))
 suite.addTests(loader.loadTestsFromTestCase(DecoratorTest))
 suite.addTests(loader.loadTestsFromTestCase(AllRequestsDecoratorTest))
+suite.addTests(loader.loadTestsFromTestCase(AllRequestsMethodDecoratorTest))
+suite.addTests(loader.loadTestsFromTestCase(UrlMatchMethodDecoratorTest))
 suite.addTests(loader.loadTestsFromTestCase(ResponseTest))
