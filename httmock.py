@@ -27,7 +27,10 @@ def response(status_code=200, content='', headers=None, reason=None, elapsed=0,
     res = requests.Response()
     res.status_code = status_code
     if isinstance(content, dict):
-        content = json.dumps(content)
+        try:
+            content = bytes(json.dumps(content), 'utf-8')
+        except TypeError:
+            content = json.dumps(content)
     res._content = content
     res.headers = structures.CaseInsensitiveDict(headers or {})
     res.reason = reason
