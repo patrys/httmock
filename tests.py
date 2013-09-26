@@ -161,6 +161,28 @@ class ResponseTest(unittest.TestCase):
         self.assertEqual(r.cookies['foo'], 'bar')
 
 
+class Python3EncodingTest(unittest.TestCase):
+    """Previous behavior would result in this test failing in Python3 with:
+
+    TypeError: Can't convert 'bytes' object to str implicitly
+
+    """
+    def setUp(self):
+        self.content = {'name': 'foo', 'ipv4addr': '127.0.0.1'}
+
+    @all_requests
+    def get_mock(self, url, request):
+        return {'content': self.content,
+                'headers': {'content-type': 'application/json'},
+                'status_code': 200,
+                'elapsed': 5}
+
+    def test_get(self):
+        with HTTMock(self.get_mock):
+            response = requests.get('http://foo_bar')
+            self.assertEqual(self.content, response.json())
+
+
 suite = unittest.TestSuite()
 loader = unittest.TestLoader()
 suite.addTests(loader.loadTestsFromTestCase(MockTest))
@@ -169,3 +191,4 @@ suite.addTests(loader.loadTestsFromTestCase(AllRequestsDecoratorTest))
 suite.addTests(loader.loadTestsFromTestCase(AllRequestsMethodDecoratorTest))
 suite.addTests(loader.loadTestsFromTestCase(UrlMatchMethodDecoratorTest))
 suite.addTests(loader.loadTestsFromTestCase(ResponseTest))
+suite.addTests(loader.loadTestsFromTestCase(Python3EncodingTest))
