@@ -1,4 +1,5 @@
 import requests
+import sys
 import unittest
 
 from httmock import all_requests, response, urlmatch, with_httmock, HTTMock
@@ -137,9 +138,16 @@ class UrlMatchMethodDecoratorTest(unittest.TestCase):
 class ResponseTest(unittest.TestCase):
 
     def test_response_auto_json(self):
-        r = response(0, {'foo':'bar'})
-        self.assertTrue(isinstance(r.content, str))
-        self.assertEqual(r.content, '{"foo": "bar"}')
+        expectation = '{"foo": "bar"}'
+        r = response(0, {'foo': 'bar'})
+        if sys.version_info[0] == 2:
+            self.assertTrue(isinstance(r.content, str))
+        elif sys.version_info[0] == 3:
+            self.assertTrue(isinstance(r.content, bytes))
+            expectation = bytes(expectation, 'utf-8')
+        else:
+            assert False, 'Could not determine Python version'
+        self.assertEqual(r.content, expectation)
 
     def test_response_status_code(self):
         r = response(200)
@@ -161,6 +169,28 @@ class ResponseTest(unittest.TestCase):
         self.assertEqual(r.cookies['foo'], 'bar')
 
 
+class Python3EncodingTest(unittest.TestCase):
+    """Previous behavior would result in this test failing in Python3 with:
+
+    TypeError: Can't convert 'bytes' object to str implicitly
+
+    """
+    def setUp(self):
+        self.content = {'name': 'foo', 'ipv4addr': '127.0.0.1'}
+
+    @all_requests
+    def get_mock(self, url, request):
+        return {'content': self.content,
+                'headers': {'content-type': 'application/json'},
+                'status_code': 200,
+                'elapsed': 5}
+
+    def test_get(self):
+        with HTTMock(self.get_mock):
+            response = requests.get('http://foo_bar')
+            self.assertEqual(self.content, response.json())
+
+
 suite = unittest.TestSuite()
 loader = unittest.TestLoader()
 suite.addTests(loader.loadTestsFromTestCase(MockTest))
@@ -169,3 +199,4 @@ suite.addTests(loader.loadTestsFromTestCase(AllRequestsDecoratorTest))
 suite.addTests(loader.loadTestsFromTestCase(AllRequestsMethodDecoratorTest))
 suite.addTests(loader.loadTestsFromTestCase(UrlMatchMethodDecoratorTest))
 suite.addTests(loader.loadTestsFromTestCase(ResponseTest))
+suite.addTests(loader.loadTestsFromTestCase(Python3EncodingTest))
