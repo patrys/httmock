@@ -1,4 +1,5 @@
 import requests
+import sys
 import unittest
 
 from httmock import all_requests, response, urlmatch, with_httmock, HTTMock
@@ -136,10 +137,19 @@ class UrlMatchMethodDecoratorTest(unittest.TestCase):
 
 class ResponseTest(unittest.TestCase):
 
+    content = {'name': 'foo', 'ipv4addr': '127.0.0.1'}
+
     def test_response_auto_json(self):
-        r = response(0, {'foo':'bar'})
-        self.assertTrue(isinstance(r.content, str))
-        self.assertEqual(r.content, '{"foo": "bar"}')
+        expectation = '{"ipv4addr": "127.0.0.1", "name": "foo"}'
+        r = response(0, self.content)
+        if sys.version_info[0] == 2:
+            self.assertTrue(isinstance(r.content, str))
+        elif sys.version_info[0] == 3:
+            self.assertTrue(isinstance(r.content, bytes))
+            expectation = bytes(expectation, 'utf-8')
+        else:
+            assert False, 'Could not determine Python version'
+        self.assertEqual(r.content, expectation)
 
     def test_response_status_code(self):
         r = response(200)
@@ -159,6 +169,24 @@ class ResponseTest(unittest.TestCase):
         self.assertEqual(len(r.cookies), 1)
         self.assertTrue('foo' in r.cookies)
         self.assertEqual(r.cookies['foo'], 'bar')
+
+    def test_python_version_encoding_differences(self):
+        """Previous behavior would result in this test failing in Python3 due
+        to how requests checks for utf-8 JSON content in requests.utils with:
+
+        TypeError: Can't convert 'bytes' object to str implicitly
+
+        """
+        @all_requests
+        def get_mock(url, request):
+            return {'content': self.content,
+                    'headers': {'content-type': 'application/json'},
+                    'status_code': 200,
+                    'elapsed': 5}
+
+        with HTTMock(get_mock):
+            response = requests.get('http://foo_bar')
+            self.assertEqual(self.content, response.json())
 
 
 suite = unittest.TestSuite()
