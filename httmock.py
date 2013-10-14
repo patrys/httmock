@@ -80,6 +80,7 @@ class HTTMock(object):
     Acts as a context manager to allow mocking
     """
     STATUS_CODE = 200
+
     def __init__(self, *handlers):
         self.handlers = handlers
 
@@ -108,9 +109,9 @@ class HTTMock(object):
                             res.get('reason'),
                             res.get('elapsed', 0),
                             request)
-        obj = requests.Response()
-        obj._content = res
-        return obj
+        elif isinstance(res, basestring):
+            return response(content=res)
+        return None
 
 
 def with_httmock(*handlers):
