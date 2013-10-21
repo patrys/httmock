@@ -67,6 +67,18 @@ class MockTest(unittest.TestCase):
         self.assertEqual(r.status_code, 400)
         self.assertEqual(r.content, 'Bad request.')
 
+    def test_real_request_fallback(self):
+        with HTTMock(google_mock, facebook_mock):
+            r = requests.get('http://example.com/')
+        self.assertEqual(r.status_code, 200)
+
+    def test_invalid_intercept_response_raises_value_error(self):
+        @all_requests
+        def response_content(url, request):
+            return -1
+        with HTTMock(response_content):
+            self.assertRaises(TypeError, requests.get, 'http://example.com/')
+
 
 class DecoratorTest(unittest.TestCase):
 
