@@ -11,6 +11,9 @@ try:
 except ImportError:
     import urllib.parse as urlparse
 
+if sys.version_info >= (3, 0, 0):
+    basestring = str
+
 
 class Headers(object):
     def __init__(self, res):

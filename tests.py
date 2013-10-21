@@ -152,16 +152,14 @@ class ResponseTest(unittest.TestCase):
     content = {'name': 'foo', 'ipv4addr': '127.0.0.1'}
 
     def test_response_auto_json(self):
-        expectation = '{"ipv4addr": "127.0.0.1", "name": "foo"}'
         r = response(0, self.content)
         if sys.version_info[0] == 2:
             self.assertTrue(isinstance(r.content, str))
         elif sys.version_info[0] == 3:
             self.assertTrue(isinstance(r.content, bytes))
-            expectation = bytes(expectation, 'utf-8')
         else:
             assert False, 'Could not determine Python version'
-        self.assertEqual(r.content, expectation)
+        self.assertEqual(r.json(), self.content)
 
     def test_response_status_code(self):
         r = response(200)
