@@ -111,7 +111,11 @@ class HTTMock(object):
                             request)
         elif isinstance(res, basestring):
             return response(content=res)
-        return None
+        elif res is None:
+            return None
+        else:
+            raise TypeError(
+                "Dont know how to handle response of type {}".format(type(res)))
 
 
 def with_httmock(*handlers):
