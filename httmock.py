@@ -40,9 +40,10 @@ def response(status_code=200, content='', headers=None, reason=None, elapsed=0,
     res.reason = reason
     res.elapsed = datetime.timedelta(elapsed)
     res.request = request
-    res.url = request.url
-    if isinstance(request.url, bytes):
-        res.url = request.url.decode('utf-8')
+    if hasattr(request, 'url'):
+        res.url = request.url
+        if isinstance(request.url, bytes):
+            res.url = request.url.decode('utf-8')
     if 'set-cookie' in res.headers:
         res.cookies.extract_cookies(cookies.MockResponse(Headers(res)),
                                     cookies.MockRequest(request))
