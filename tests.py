@@ -198,6 +198,19 @@ class ResponseTest(unittest.TestCase):
             response = requests.get('http://foo_bar')
             self.assertEqual(self.content, response.json())
 
+    def test_mock_redirect(self):
+        """Mock out a redirect."""
+
+        @urlmatch(netloc='example.com')
+        def get_mock(url, request):
+            return {'status_code': 302,
+                    'headers': {'Location': 'http://google.com/'}}
+
+        with HTTMock(get_mock, google_mock):
+            response = requests.get('http://example.com/')
+            self.assertEqual(len(response.history), 1)
+            self.assertEqual(response.content, 'Hello from Google')
+
 
 suite = unittest.TestSuite()
 loader = unittest.TestLoader()

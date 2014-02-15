@@ -47,6 +47,11 @@ def response(status_code=200, content='', headers=None, reason=None, elapsed=0,
     if 'set-cookie' in res.headers:
         res.cookies.extract_cookies(cookies.MockResponse(Headers(res)),
                                     cookies.MockRequest(request))
+
+    # normally this closes the underlying connection,
+    #  but we have nothing to free.
+    res.close = lambda *args, **kwargs: None
+
     return res
 
 
@@ -94,10 +99,40 @@ class HTTMock(object):
 
     def __enter__(self):
         self._real_session_send = requests.Session.send
+
         def _fake_send(session, request, **kwargs):
             response = self.intercept(request)
             if isinstance(response, requests.Response):
+                # this is pasted from requests to handle redirects properly:
+                kwargs.setdefault('stream', session.stream)
+                kwargs.setdefault('verify', session.verify)
+                kwargs.setdefault('cert', session.cert)
+                kwargs.setdefault('proxies', session.proxies)
+
+                allow_redirects = kwargs.pop('allow_redirects', True)
+                stream = kwargs.get('stream')
+                timeout = kwargs.get('timeout')
+                verify = kwargs.get('verify')
+                cert = kwargs.get('cert')
+                proxies = kwargs.get('proxies')
+
+                gen = session.resolve_redirects(
+                    response,
+                    request,
+                    stream=stream,
+                    timeout=timeout,
+                    verify=verify,
+                    cert=cert,
+                    proxies=proxies)
+
+                history = [resp for resp in gen] if allow_redirects else []
+
+                if history:
+                    history.insert(0, response)
+                    response = history.pop()
+                    response.history = tuple(history)
                 return response
+
             return self._real_session_send(session, request, **kwargs)
         requests.Session.send = _fake_send
         return self
