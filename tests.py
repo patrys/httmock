@@ -87,6 +87,12 @@ class DecoratorTest(unittest.TestCase):
         r = requests.get('http://example.com/')
         self.assertEqual(r.content, 'Hello from example.com')
 
+    @with_httmock(any_mock)
+    def test_iter_lines(self):
+        r = requests.get('http://example.com/')
+        self.assertEqual(list(r.iter_lines()),
+                         ['Hello from example.com'])
+
 
 class AllRequestsDecoratorTest(unittest.TestCase):
 

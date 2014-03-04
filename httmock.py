@@ -36,6 +36,7 @@ def response(status_code=200, content='', headers=None, reason=None, elapsed=0,
         else:
             content = json.dumps(content)
     res._content = content
+    res._content_consumed = content
     res.headers = structures.CaseInsensitiveDict(headers or {})
     res.reason = reason
     res.elapsed = datetime.timedelta(elapsed)
