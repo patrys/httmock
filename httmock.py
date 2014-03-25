@@ -73,14 +73,13 @@ def urlmatch(scheme=None, netloc=None, path=None, method=None):
             else:
                 url = url_or_request
                 request = args[0]
-            if isinstance(request, requests.PreparedRequest) and method is not None and \
-                            method.lower() != request.method.lower():
-                return
             if scheme is not None and scheme != url.scheme:
                 return
             if netloc is not None and not re.match(netloc, url.netloc):
                 return
             if path is not None and not re.match(path, url.path):
+                return
+            if method is not None and method.upper() != request.method:
                 return
             return func(self_or_url, url_or_request, *args, **kwargs)
         return inner

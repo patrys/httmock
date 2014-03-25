@@ -15,6 +15,11 @@ def unmatched_path(url, request):
     raise AssertionError('This is outrageous')
 
 
+@urlmatch(method='post')
+def unmatched_method(url, request):
+    raise AssertionError('This is outrageous')
+
+
 @urlmatch(netloc=r'(.*\.)?google\.com$', path=r'^/$')
 def google_mock(url, request):
     return 'Hello from Google'
@@ -53,6 +58,11 @@ class MockTest(unittest.TestCase):
             r = requests.get('http://example.com/')
         self.assertEqual(r.content, 'Hello from example.com')
 
+    def test_method_fallback(self):
+        with HTTMock(unmatched_method, any_mock):
+            r = requests.get('http://example.com/')
+        self.assertEqual(r.content, 'Hello from example.com')
+
     def test_netloc_fallback(self):
         with HTTMock(google_mock, facebook_mock):
             r = requests.get('http://google.com/')
@@ -68,9 +78,11 @@ class MockTest(unittest.TestCase):
         self.assertEqual(r.content, 'Bad request.')
 
     def test_real_request_fallback(self):
-        with HTTMock(google_mock, facebook_mock):
-            r = requests.get('http://example.com/')
+        with HTTMock(any_mock):
+            with HTTMock(google_mock, facebook_mock):
+                r = requests.get('http://example.com/')
         self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.content, 'Hello from example.com')
 
     def test_invalid_intercept_response_raises_value_error(self):
         @all_requests
@@ -187,12 +199,10 @@ class ResponseTest(unittest.TestCase):
         self.assertEqual(r.cookies['foo'], 'bar')
 
     def test_python_version_encoding_differences(self):
-        """Previous behavior would result in this test failing in Python3 due
-        to how requests checks for utf-8 JSON content in requests.utils with:
-
-        TypeError: Can't convert 'bytes' object to str implicitly
-
-        """
+        # Previous behavior would result in this test failing in Python3 due
+        # to how requests checks for utf-8 JSON content in requests.utils with:
+        #
+        # TypeError: Can't convert 'bytes' object to str implicitly
         @all_requests
         def get_mock(url, request):
             return {'content': self.content,
@@ -205,8 +215,6 @@ class ResponseTest(unittest.TestCase):
             self.assertEqual(self.content, response.json())
 
     def test_mock_redirect(self):
-        """Mock out a redirect."""
-
         @urlmatch(netloc='example.com')
         def get_mock(url, request):
             return {'status_code': 302,
@@ -216,13 +224,3 @@ class ResponseTest(unittest.TestCase):
             response = requests.get('http://example.com/')
             self.assertEqual(len(response.history), 1)
             self.assertEqual(response.content, 'Hello from Google')
-
-
-suite = unittest.TestSuite()
-loader = unittest.TestLoader()
-suite.addTests(loader.loadTestsFromTestCase(MockTest))
-suite.addTests(loader.loadTestsFromTestCase(DecoratorTest))
-suite.addTests(loader.loadTestsFromTestCase(AllRequestsDecoratorTest))
-suite.addTests(loader.loadTestsFromTestCase(AllRequestsMethodDecoratorTest))
-suite.addTests(loader.loadTestsFromTestCase(UrlMatchMethodDecoratorTest))
-suite.addTests(loader.loadTestsFromTestCase(ResponseTest))
