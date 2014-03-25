@@ -63,10 +63,13 @@ def all_requests(func):
     return inner
 
 
-def urlmatch(scheme=None, netloc=None, path=None):
+def urlmatch(scheme=None, netloc=None, path=None, method=None):
     def decorator(func):
         @wraps(func)
         def inner(self_or_url, url_or_request, *args, **kwargs):
+            if isinstance(url_or_request, requests.PreparedRequest) and method is not None and \
+                            method.lower() != url_or_request.method.lower():
+                return
             if isinstance(self_or_url, urlparse.SplitResult):
                 url = self_or_url
             else:
