@@ -67,13 +67,16 @@ def urlmatch(scheme=None, netloc=None, path=None, method=None):
     def decorator(func):
         @wraps(func)
         def inner(self_or_url, url_or_request, *args, **kwargs):
-            if isinstance(url_or_request, requests.PreparedRequest) and method is not None and \
-                            method.lower() != url_or_request.method.lower():
-                return
             if isinstance(self_or_url, urlparse.SplitResult):
                 url = self_or_url
+                re = url_or_request
             else:
                 url = url_or_request
+                re = args[0]
+
+            if isinstance(re, requests.PreparedRequest) and method is not None and method.lower() != re.method.lower():
+                return
+
             if scheme is not None and scheme != url.scheme:
                 return
             if netloc is not None and not re.match(netloc, url.netloc):
