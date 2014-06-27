@@ -23,7 +23,7 @@ setup(
         'Intended Audience :: Developers',
         'Topic :: Software Development :: Testing',
         'Operating System :: OS Independent'],
-    install_requires=['requests'],
+    install_requires=['requests >= 1.0.0'],
     license=LICENSE,
     long_description=DESCRIPTION,
     test_suite='tests')
