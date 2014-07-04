@@ -163,7 +163,7 @@ class HTTMock(object):
             return None
         else:
             raise TypeError(
-                "Dont know how to handle response of type {}".format(type(res)))
+                "Dont know how to handle response of type {0}".format(type(res)))
 
 
 def with_httmock(*handlers):
