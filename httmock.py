@@ -1,10 +1,11 @@
 from functools import wraps
+import datetime
+from requests import cookies
 import json
 import re
-import sys
-import datetime
 import requests
-from requests import structures, cookies, compat, sessions, utils
+from requests import structures
+import sys
 try:
     import urlparse
 except ImportError:
@@ -145,33 +146,9 @@ class HTTMock(object):
             Fake this method so the `PreparedRequest` objects contains
             an attribute `original` of the original request.
             """
-            r_cookies = request.cookies or {}
-            if not isinstance(r_cookies, compat.cookielib.CookieJar):
-                r_cookies = cookies.cookiejar_from_dict(r_cookies)
-
-            merged_cookies = cookies.merge_cookies(
-                cookies.merge_cookies(cookies.RequestsCookieJar(), session.cookies), r_cookies)
-
-            auth = request.auth
-            if session.trust_env and not auth and not session.auth:
-                auth = utils.get_netrc_auth(request.url)
-
-            p = requests.PreparedRequest()
-            p.prepare(
-                method=request.method.upper(),
-                url=request.url,
-                files=request.files,
-                data=request.data,
-                json=request.json,
-                headers=sessions.merge_setting(request.headers, session.headers,
-                    dict_class=structures.CaseInsensitiveDict),
-                params=sessions.merge_setting(request.params, session.params),
-                auth=sessions.merge_setting(auth, session.auth),
-                cookies=merged_cookies,
-                hooks=sessions.merge_hooks(request.hooks, session.hooks),
-            )
-            p.original = request
-            return p
+            prep = self._real_session_prepare_request(session, request)
+            prep.original = request
+            return prep
 
         requests.Session.send = _fake_send
         requests.Session.prepare_request = _fake_prepare_request
