@@ -1,11 +1,10 @@
 from functools import wraps
-import datetime
-from requests import cookies
 import json
 import re
-import requests
-from requests import structures
 import sys
+import datetime
+import requests
+from requests import structures, cookies, compat, sessions
 try:
     import urlparse
 except ImportError:
@@ -104,6 +103,7 @@ class HTTMock(object):
 
     def __enter__(self):
         self._real_session_send = requests.Session.send
+        self._real_session_prepare_request = requests.Session.prepare_request
 
         def _fake_send(session, request, **kwargs):
             response = self.intercept(request)
@@ -139,11 +139,48 @@ class HTTMock(object):
                 return response
 
             return self._real_session_send(session, request, **kwargs)
+
+        def _fake_prepare_request(session, request):
+            """
+            Fake this method so the `PreparedRequest` objects contains
+            an attribute `original` of the original request.
+            """
+            r_cookies = request.cookies or {}
+            if not isinstance(r_cookies, compat.cookielib.CookieJar):
+                r_cookies = cookies.cookiejar_from_dict(r_cookies)
+
+            merged_cookies = cookies.merge_cookies(
+                cookies.merge_cookies(cookies.RequestsCookieJar(), session.cookies), r_cookies)
+
+            auth = request.auth
+            if session.trust_env and not auth and not session.auth:
+                auth = get_netrc_auth(request.url)
+
+            p = requests.PreparedRequest()
+            p.prepare(
+                method=request.method.upper(),
+                url=request.url,
+                files=request.files,
+                data=request.data,
+                json=request.json,
+                headers=sessions.merge_setting(request.headers, session.headers,
+                    dict_class=structures.CaseInsensitiveDict),
+                params=sessions.merge_setting(request.params, session.params),
+                auth=sessions.merge_setting(auth, session.auth),
+                cookies=merged_cookies,
+                hooks=sessions.merge_hooks(request.hooks, session.hooks),
+            )
+            p.original = request
+            return p
+
         requests.Session.send = _fake_send
+        requests.Session.prepare_request = _fake_prepare_request
+
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         requests.Session.send = self._real_session_send
+        requests.Session.prepare_request = self._real_session_prepare_request
 
     def intercept(self, request):
         url = urlparse.urlsplit(request.url)
