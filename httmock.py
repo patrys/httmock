@@ -4,7 +4,7 @@ import re
 import sys
 import datetime
 import requests
-from requests import structures, cookies, compat, sessions
+from requests import structures, cookies, compat, sessions, utils
 try:
     import urlparse
 except ImportError:
@@ -154,7 +154,7 @@ class HTTMock(object):
 
             auth = request.auth
             if session.trust_env and not auth and not session.auth:
-                auth = get_netrc_auth(request.url)
+                auth = utils.get_netrc_auth(request.url)
 
             p = requests.PreparedRequest()
             p.prepare(
