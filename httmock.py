@@ -104,6 +104,7 @@ class HTTMock(object):
 
     def __enter__(self):
         self._real_session_send = requests.Session.send
+        self._real_session_prepare_request = requests.Session.prepare_request
 
         def _fake_send(session, request, **kwargs):
             response = self.intercept(request)
@@ -139,11 +140,24 @@ class HTTMock(object):
                 return response
 
             return self._real_session_send(session, request, **kwargs)
+
+        def _fake_prepare_request(session, request):
+            """
+            Fake this method so the `PreparedRequest` objects contains
+            an attribute `original` of the original request.
+            """
+            prep = self._real_session_prepare_request(session, request)
+            prep.original = request
+            return prep
+
         requests.Session.send = _fake_send
+        requests.Session.prepare_request = _fake_prepare_request
+
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         requests.Session.send = self._real_session_send
+        requests.Session.prepare_request = self._real_session_prepare_request
 
     def intercept(self, request):
         url = urlparse.urlsplit(request.url)
