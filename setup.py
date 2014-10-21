@@ -6,8 +6,10 @@ import os
 LICENSE = open(
     os.path.join(os.path.dirname(__file__), 'LICENSE')).read().strip()
 
-DESCRIPTION = open(
-    os.path.join(os.path.dirname(__file__), 'README.md')).read().strip()
+def read(*paths):
+    """Build a file path from *paths* and return the contents."""
+    with open(os.path.join(*paths), 'r') as f:
+        return f.read()
 
 setup(
     name='httmock',
@@ -25,5 +27,5 @@ setup(
         'Operating System :: OS Independent'],
     install_requires=['requests >= 1.0.0'],
     license=LICENSE,
-    long_description=DESCRIPTION,
+    long_description=(read('README.rst')),
     test_suite='tests')
