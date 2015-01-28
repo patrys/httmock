@@ -1,13 +1,17 @@
 httmock
 =======
 
-A mocking library for `requests` for Python 2.6, 2.7 and 3.2, 3.3.
+A mocking library for `requests` for Python 2.6, 2.7, 3.2, 3.3 and 3.4.
 
 Installation
 ------------
 
     pip install httmock
-    
+
+Or, if you are a Gentoo user:
+
+    emerge dev-python/httmock
+
 Usage
 -----
 You can use it to mock third-party APIs and test libraries that use `requests` internally, conditionally using mocked replies with the `urlmatch` decorator:
