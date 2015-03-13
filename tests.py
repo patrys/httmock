@@ -156,6 +156,10 @@ class UrlMatchMethodDecoratorTest(unittest.TestCase):
     def facebook_mock(self, url, request):
         return 'Hello from Facebook'
 
+    @urlmatch(query=r'.*page=test')
+    def query_page_mock(self, url, request):
+        return 'Hello from test page'
+
     def test_netloc_fallback(self):
         with HTTMock(self.google_mock, facebook_mock):
             r = requests.get('http://google.com/')
@@ -163,6 +167,13 @@ class UrlMatchMethodDecoratorTest(unittest.TestCase):
         with HTTMock(self.google_mock, facebook_mock):
             r = requests.get('http://facebook.com/')
         self.assertEqual(r.content, 'Hello from Facebook')
+
+    def test_query(self):
+        with HTTMock(self.query_page_mock, self.google_mock):
+            r = requests.get('http://google.com/?page=test')
+            r2 = requests.get('http://google.com/')
+        self.assertEqual(r.content, 'Hello from test page')
+        self.assertEqual(r2.content, 'Hello from Google')
 
 
 class ResponseTest(unittest.TestCase):

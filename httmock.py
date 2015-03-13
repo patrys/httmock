@@ -63,7 +63,7 @@ def all_requests(func):
     return inner
 
 
-def urlmatch(scheme=None, netloc=None, path=None, method=None):
+def urlmatch(scheme=None, netloc=None, path=None, method=None, query=None):
     def decorator(func):
         @wraps(func)
         def inner(self_or_url, url_or_request, *args, **kwargs):
@@ -78,6 +78,8 @@ def urlmatch(scheme=None, netloc=None, path=None, method=None):
             if netloc is not None and not re.match(netloc, url.netloc):
                 return
             if path is not None and not re.match(path, url.path):
+                return
+            if query is not None and not re.match(query, url.query):
                 return
             if method is not None and method.upper() != request.method:
                 return
