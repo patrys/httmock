@@ -30,7 +30,7 @@ def response(status_code=200, content='', headers=None, reason=None, elapsed=0,
              request=None):
     res = requests.Response()
     res.status_code = status_code
-    if isinstance(content, dict):
+    if isinstance(content, (dict, list)):
         if sys.version_info[0] == 3:
             content = bytes(json.dumps(content), 'utf-8')
         else:
