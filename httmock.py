@@ -10,6 +10,10 @@ try:
     import urlparse
 except ImportError:
     import urllib.parse as urlparse
+try:
+    from cStringIO import StringIO
+except ImportError:
+    from io import StringIO
 
 if sys.version_info >= (3, 0, 0):
     basestring = str
@@ -27,7 +31,7 @@ class Headers(object):
 
 
 def response(status_code=200, content='', headers=None, reason=None, elapsed=0,
-             request=None):
+             request=None, stream=False):
     res = requests.Response()
     res.status_code = status_code
     if isinstance(content, (dict, list)):
@@ -41,6 +45,10 @@ def response(status_code=200, content='', headers=None, reason=None, elapsed=0,
     res.reason = reason
     res.elapsed = datetime.timedelta(elapsed)
     res.request = request
+    if stream:
+        res.raw = StringIO(content if content is not None else '')
+    else:
+        res.raw = StringIO('')
     if hasattr(request, 'url'):
         res.url = request.url
         if isinstance(request.url, bytes):
@@ -109,7 +117,7 @@ class HTTMock(object):
         self._real_session_prepare_request = requests.Session.prepare_request
 
         def _fake_send(session, request, **kwargs):
-            response = self.intercept(request)
+            response = self.intercept(request, stream=kwargs['stream'])
             if isinstance(response, requests.Response):
                 # this is pasted from requests to handle redirects properly:
                 kwargs.setdefault('stream', session.stream)
@@ -161,7 +169,7 @@ class HTTMock(object):
         requests.Session.send = self._real_session_send
         requests.Session.prepare_request = self._real_session_prepare_request
 
-    def intercept(self, request):
+    def intercept(self, request, stream):
         url = urlparse.urlsplit(request.url)
         res = first_of(self.handlers, url, request)
         if isinstance(res, requests.Response):
@@ -172,9 +180,10 @@ class HTTMock(object):
                             res.get('headers'),
                             res.get('reason'),
                             res.get('elapsed', 0),
-                            request)
+                            request,
+                            stream=stream)
         elif isinstance(res, basestring):
-            return response(content=res)
+            return response(content=res, stream=stream)
         elif res is None:
             return None
         else:

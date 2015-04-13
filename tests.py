@@ -63,6 +63,11 @@ class MockTest(unittest.TestCase):
             r = requests.get('http://example.com/')
         self.assertEqual(r.content, 'Hello from example.com')
 
+    def test_stream(self):
+        with HTTMock(any_mock):
+            r = requests.get('http://example.com/', stream=True)
+        self.assertEqual(r.raw.read(), 'Hello from example.com')
+
     def test_netloc_fallback(self):
         with HTTMock(google_mock, facebook_mock):
             r = requests.get('http://google.com/')
@@ -201,6 +206,14 @@ class ResponseTest(unittest.TestCase):
         r = response(200, None, {'Content-Type': 'application/json'})
         self.assertEqual(r.headers['content-type'], 'application/json')
 
+    def test_response_stream_raw(self):
+        r = response(200, 'content', {'Content-Type': 'application/json'}, stream=True)
+        self.assertEqual(r.raw.read(), 'content')
+
+    def test_response_nostream_raw(self):
+        r = response(200, 'content', {'Content-Type': 'application/json'})
+        self.assertEqual(r.raw.read(), '')
+
     def test_response_cookies(self):
         @all_requests
         def response_content(url, request):
@@ -238,3 +251,4 @@ class ResponseTest(unittest.TestCase):
             response = requests.get('http://example.com/')
             self.assertEqual(len(response.history), 1)
             self.assertEqual(response.content, 'Hello from Google')
+
