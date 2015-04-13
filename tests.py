@@ -179,6 +179,7 @@ class UrlMatchMethodDecoratorTest(unittest.TestCase):
 class ResponseTest(unittest.TestCase):
 
     content = {'name': 'foo', 'ipv4addr': '127.0.0.1'}
+    content_list = list(content.keys())
 
     def test_response_auto_json(self):
         r = response(0, self.content)
@@ -189,6 +190,8 @@ class ResponseTest(unittest.TestCase):
         else:
             assert False, 'Could not determine Python version'
         self.assertEqual(r.json(), self.content)
+        r = response(0, self.content_list)
+        self.assertEqual(r.json(), self.content_list)
 
     def test_response_status_code(self):
         r = response(200)
