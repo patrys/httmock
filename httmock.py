@@ -173,7 +173,7 @@ class HTTMock(object):
                             res.get('reason'),
                             res.get('elapsed', 0),
                             request)
-        elif isinstance(res, basestring):
+        elif isinstance(res, (basestring, bytes)):
             return response(content=res)
         elif res is None:
             return None
