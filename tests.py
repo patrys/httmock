@@ -212,6 +212,39 @@ class ResponseTest(unittest.TestCase):
         self.assertTrue('foo' in r.cookies)
         self.assertEqual(r.cookies['foo'], 'bar')
 
+    def test_response_cookies_stored_in_session(self):
+        cookies = 'foo=bar;'
+
+        @all_requests
+        def response_content(url, request):
+            return response(200, 'Foo', {'Set-Cookie': cookies},
+                            request=request)
+
+        session = requests.Session()
+        with HTTMock(response_content):
+            r = session.get('https://foo_bar')
+            self.assertEqual(r.cookies['foo'], 'bar')
+            self.assertEqual(session.cookies['foo'], 'bar')
+            cookies = 'baz=qux;'
+            r = session.get('https://foo_bar')
+            self.assertTrue('foo' not in r.cookies)
+            self.assertEqual(session.cookies['foo'], 'bar')
+            self.assertEqual(session.cookies['baz'], 'qux')
+
+    def test_session_cookies_with_redirect(self):
+        @urlmatch(netloc='example.com')
+        def get_mock(url, request):
+            return {'status_code': 302,
+                    'headers': {'Location': 'http://google.com/',
+                                'Set-Cookie': 'foo=bar;'}}
+
+        session = requests.Session()
+        with HTTMock(get_mock, google_mock):
+            r = session.get('http://example.com/')
+            self.assertEqual(len(r.history), 1)
+            self.assertTrue("foo" not in r.cookies)
+            self.assertTrue("foo" in session.cookies)
+
     def test_python_version_encoding_differences(self):
         # Previous behavior would result in this test failing in Python3 due
         # to how requests checks for utf-8 JSON content in requests.utils with:
