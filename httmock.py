@@ -12,6 +12,15 @@ except ImportError:
     import urllib.parse as urlparse
 
 if sys.version_info >= (3, 0, 0):
+    from io import StringIO
+else:
+    try:
+        from cStringIO import StringIO
+    except ImportError:
+        from StringIO import StringIO
+
+
+if sys.version_info >= (3, 0, 0):
     basestring = str
 
 
@@ -27,7 +36,7 @@ class Headers(object):
 
 
 def response(status_code=200, content='', headers=None, reason=None, elapsed=0,
-             request=None):
+             request=None, stream=False):
     res = requests.Response()
     res.status_code = status_code
     if isinstance(content, (dict, list)):
@@ -48,6 +57,10 @@ def response(status_code=200, content='', headers=None, reason=None, elapsed=0,
     if 'set-cookie' in res.headers:
         res.cookies.extract_cookies(cookies.MockResponse(Headers(res)),
                                     cookies.MockRequest(request))
+    if stream:
+        res.raw = StringIO(content)
+    else:
+        res.raw = StringIO('')
 
     # normally this closes the underlying connection,
     #  but we have nothing to free.
@@ -109,7 +122,8 @@ class HTTMock(object):
         self._real_session_prepare_request = requests.Session.prepare_request
 
         def _fake_send(session, request, **kwargs):
-            response = self.intercept(request)
+            response = self.intercept(request, **kwargs)
+
             if isinstance(response, requests.Response):
                 # this is pasted from requests to handle redirects properly:
                 kwargs.setdefault('stream', session.stream)
@@ -139,6 +153,7 @@ class HTTMock(object):
                     history.insert(0, response)
                     response = history.pop()
                     response.history = tuple(history)
+
                 return response
 
             return self._real_session_send(session, request, **kwargs)
@@ -161,9 +176,10 @@ class HTTMock(object):
         requests.Session.send = self._real_session_send
         requests.Session.prepare_request = self._real_session_prepare_request
 
-    def intercept(self, request):
+    def intercept(self, request, **kwargs):
         url = urlparse.urlsplit(request.url)
         res = first_of(self.handlers, url, request)
+
         if isinstance(res, requests.Response):
             return res
         elif isinstance(res, dict):
@@ -172,9 +188,10 @@ class HTTMock(object):
                             res.get('headers'),
                             res.get('reason'),
                             res.get('elapsed', 0),
-                            request)
+                            request,
+                            stream=kwargs.get('stream', False))
         elif isinstance(res, (basestring, bytes)):
-            return response(content=res)
+            return response(content=res, stream=kwargs.get('stream', False))
         elif res is None:
             return None
         else:
