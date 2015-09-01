@@ -34,6 +34,13 @@ def any_mock(url, request):
     return 'Hello from %s' % (url.netloc,)
 
 
+def dict_any_mock(url, request):
+    return {
+        'content': 'Hello from %s' % (url.netloc,),
+        'status_code': 200
+    }
+
+
 def example_400_response(url, response):
     r = requests.Response()
     r.status_code = 400
@@ -238,3 +245,20 @@ class ResponseTest(unittest.TestCase):
             response = requests.get('http://example.com/')
             self.assertEqual(len(response.history), 1)
             self.assertEqual(response.content, 'Hello from Google')
+
+
+class StreamTest(unittest.TestCase):
+    @with_httmock(any_mock)
+    def test_stream_request(self):
+        r = requests.get('http://domain.com/', stream=True)
+        self.assertEqual(r.raw.read(), 'Hello from domain.com')
+
+    @with_httmock(dict_any_mock)
+    def test_stream_request_with_dict_mock(self):
+        r = requests.get('http://domain.com/', stream=True)
+        self.assertEqual(r.raw.read(), 'Hello from domain.com')
+
+    @with_httmock(any_mock)
+    def test_non_stream_request(self):
+        r = requests.get('http://domain.com/')
+        self.assertEqual(r.raw.read(), '')
