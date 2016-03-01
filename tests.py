@@ -2,7 +2,8 @@ import requests
 import sys
 import unittest
 
-from httmock import all_requests, response, urlmatch, with_httmock, HTTMock
+from httmock import (all_requests, response, urlmatch, with_httmock, HTTMock,
+                     text_type, binary_type)
 
 
 @urlmatch(scheme='swallow')
@@ -44,7 +45,7 @@ def dict_any_mock(url, request):
 def example_400_response(url, response):
     r = requests.Response()
     r.status_code = 400
-    r._content = 'Bad request.'
+    r._content = b'Bad request.'
     return r
 
 
@@ -54,42 +55,44 @@ class MockTest(unittest.TestCase):
         with HTTMock(any_mock):
             r = requests.get('http://domain.com/')
         self.assertTrue(isinstance(r, requests.Response))
+        self.assertTrue(isinstance(r.content, binary_type))
+        self.assertTrue(isinstance(r.text, text_type))
 
     def test_scheme_fallback(self):
         with HTTMock(unmatched_scheme, any_mock):
             r = requests.get('http://example.com/')
-        self.assertEqual(r.content, 'Hello from example.com')
+        self.assertEqual(r.content, b'Hello from example.com')
 
     def test_path_fallback(self):
         with HTTMock(unmatched_path, any_mock):
             r = requests.get('http://example.com/')
-        self.assertEqual(r.content, 'Hello from example.com')
+        self.assertEqual(r.content, b'Hello from example.com')
 
     def test_method_fallback(self):
         with HTTMock(unmatched_method, any_mock):
             r = requests.get('http://example.com/')
-        self.assertEqual(r.content, 'Hello from example.com')
+        self.assertEqual(r.content, b'Hello from example.com')
 
     def test_netloc_fallback(self):
         with HTTMock(google_mock, facebook_mock):
             r = requests.get('http://google.com/')
-        self.assertEqual(r.content, 'Hello from Google')
+        self.assertEqual(r.content, b'Hello from Google')
         with HTTMock(google_mock, facebook_mock):
             r = requests.get('http://facebook.com/')
-        self.assertEqual(r.content, 'Hello from Facebook')
+        self.assertEqual(r.content, b'Hello from Facebook')
 
     def test_400_response(self):
         with HTTMock(example_400_response):
             r = requests.get('http://example.com/')
         self.assertEqual(r.status_code, 400)
-        self.assertEqual(r.content, 'Bad request.')
+        self.assertEqual(r.content, b'Bad request.')
 
     def test_real_request_fallback(self):
         with HTTMock(any_mock):
             with HTTMock(google_mock, facebook_mock):
                 r = requests.get('http://example.com/')
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(r.content, 'Hello from example.com')
+        self.assertEqual(r.content, b'Hello from example.com')
 
     def test_invalid_intercept_response_raises_value_error(self):
         @all_requests
@@ -104,13 +107,13 @@ class DecoratorTest(unittest.TestCase):
     @with_httmock(any_mock)
     def test_decorator(self):
         r = requests.get('http://example.com/')
-        self.assertEqual(r.content, 'Hello from example.com')
+        self.assertEqual(r.content, b'Hello from example.com')
 
     @with_httmock(any_mock)
     def test_iter_lines(self):
         r = requests.get('http://example.com/')
         self.assertEqual(list(r.iter_lines()),
-                         ['Hello from example.com'])
+                         [b'Hello from example.com'])
 
 
 class AllRequestsDecoratorTest(unittest.TestCase):
@@ -122,7 +125,7 @@ class AllRequestsDecoratorTest(unittest.TestCase):
         with HTTMock(response_content):
             r = requests.get('https://foo_bar')
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(r.content, 'Oh hai')
+        self.assertEqual(r.content, b'Oh hai')
 
     def test_all_str_response(self):
         @all_requests
@@ -130,7 +133,7 @@ class AllRequestsDecoratorTest(unittest.TestCase):
             return 'Hello'
         with HTTMock(response_content):
             r = requests.get('https://foo_bar')
-        self.assertEqual(r.content, 'Hello')
+        self.assertEqual(r.content, b'Hello')
 
 
 class AllRequestsMethodDecoratorTest(unittest.TestCase):
@@ -142,7 +145,7 @@ class AllRequestsMethodDecoratorTest(unittest.TestCase):
         with HTTMock(self.response_content):
             r = requests.get('https://foo_bar')
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(r.content, 'Oh hai')
+        self.assertEqual(r.content, b'Oh hai')
 
     @all_requests
     def string_response_content(self, url, request):
@@ -151,7 +154,7 @@ class AllRequestsMethodDecoratorTest(unittest.TestCase):
     def test_all_str_response(self):
         with HTTMock(self.string_response_content):
             r = requests.get('https://foo_bar')
-        self.assertEqual(r.content, 'Hello')
+        self.assertEqual(r.content, b'Hello')
 
 
 class UrlMatchMethodDecoratorTest(unittest.TestCase):
@@ -170,17 +173,17 @@ class UrlMatchMethodDecoratorTest(unittest.TestCase):
     def test_netloc_fallback(self):
         with HTTMock(self.google_mock, facebook_mock):
             r = requests.get('http://google.com/')
-        self.assertEqual(r.content, 'Hello from Google')
+        self.assertEqual(r.content, b'Hello from Google')
         with HTTMock(self.google_mock, facebook_mock):
             r = requests.get('http://facebook.com/')
-        self.assertEqual(r.content, 'Hello from Facebook')
+        self.assertEqual(r.content, b'Hello from Facebook')
 
     def test_query(self):
         with HTTMock(self.query_page_mock, self.google_mock):
             r = requests.get('http://google.com/?page=test')
             r2 = requests.get('http://google.com/')
-        self.assertEqual(r.content, 'Hello from test page')
-        self.assertEqual(r2.content, 'Hello from Google')
+        self.assertEqual(r.content, b'Hello from test page')
+        self.assertEqual(r2.content, b'Hello from Google')
 
 
 class ResponseTest(unittest.TestCase):
@@ -190,12 +193,8 @@ class ResponseTest(unittest.TestCase):
 
     def test_response_auto_json(self):
         r = response(0, self.content)
-        if sys.version_info[0] == 2:
-            self.assertTrue(isinstance(r.content, str))
-        elif sys.version_info[0] == 3:
-            self.assertTrue(isinstance(r.content, bytes))
-        else:
-            assert False, 'Could not determine Python version'
+        self.assertTrue(isinstance(r.content, binary_type))
+        self.assertTrue(isinstance(r.text, text_type))
         self.assertEqual(r.json(), self.content)
         r = response(0, self.content_list)
         self.assertEqual(r.json(), self.content_list)
@@ -244,21 +243,21 @@ class ResponseTest(unittest.TestCase):
         with HTTMock(get_mock, google_mock):
             response = requests.get('http://example.com/')
             self.assertEqual(len(response.history), 1)
-            self.assertEqual(response.content, 'Hello from Google')
+            self.assertEqual(response.content, b'Hello from Google')
 
 
 class StreamTest(unittest.TestCase):
     @with_httmock(any_mock)
     def test_stream_request(self):
         r = requests.get('http://domain.com/', stream=True)
-        self.assertEqual(r.raw.read(), 'Hello from domain.com')
+        self.assertEqual(r.raw.read(), b'Hello from domain.com')
 
     @with_httmock(dict_any_mock)
     def test_stream_request_with_dict_mock(self):
         r = requests.get('http://domain.com/', stream=True)
-        self.assertEqual(r.raw.read(), 'Hello from domain.com')
+        self.assertEqual(r.raw.read(), b'Hello from domain.com')
 
     @with_httmock(any_mock)
     def test_non_stream_request(self):
         r = requests.get('http://domain.com/')
-        self.assertEqual(r.raw.read(), '')
+        self.assertEqual(r.raw.read(), b'')
