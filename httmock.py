@@ -12,16 +12,19 @@ except ImportError:
     import urllib.parse as urlparse
 
 if sys.version_info >= (3, 0, 0):
-    from io import StringIO
+    from io import BytesIO
 else:
     try:
-        from cStringIO import StringIO
+        from cStringIO import StringIO as BytesIO
     except ImportError:
-        from StringIO import StringIO
+        from StringIO import StringIO as BytesIO
 
 
+binary_type = bytes
 if sys.version_info >= (3, 0, 0):
-    basestring = str
+    text_type = str
+else:
+    text_type = unicode  # noqa
 
 
 class Headers(object):
@@ -40,10 +43,9 @@ def response(status_code=200, content='', headers=None, reason=None, elapsed=0,
     res = requests.Response()
     res.status_code = status_code
     if isinstance(content, (dict, list)):
-        if sys.version_info[0] == 3:
-            content = bytes(json.dumps(content), 'utf-8')
-        else:
-            content = json.dumps(content)
+        content = json.dumps(content).encode('utf-8')
+    if isinstance(content, text_type):
+        content = content.encode('utf-8')
     res._content = content
     res._content_consumed = content
     res.headers = structures.CaseInsensitiveDict(headers or {})
@@ -58,9 +60,9 @@ def response(status_code=200, content='', headers=None, reason=None, elapsed=0,
         res.cookies.extract_cookies(cookies.MockResponse(Headers(res)),
                                     cookies.MockRequest(request))
     if stream:
-        res.raw = StringIO(content)
+        res.raw = BytesIO(content)
     else:
-        res.raw = StringIO('')
+        res.raw = BytesIO(b'')
 
     # normally this closes the underlying connection,
     #  but we have nothing to free.
@@ -190,7 +192,7 @@ class HTTMock(object):
                             res.get('elapsed', 0),
                             request,
                             stream=kwargs.get('stream', False))
-        elif isinstance(res, (basestring, bytes)):
+        elif isinstance(res, (text_type, binary_type)):
             return response(content=res, stream=kwargs.get('stream', False))
         elif res is None:
             return None
