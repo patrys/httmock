@@ -1,9 +1,8 @@
 import requests
-import sys
 import unittest
 
 from httmock import (all_requests, response, urlmatch, with_httmock, HTTMock,
-                     text_type, binary_type)
+                     remember_called, text_type, binary_type)
 
 
 @urlmatch(scheme='swallow')
@@ -26,8 +25,20 @@ def google_mock(url, request):
     return 'Hello from Google'
 
 
+@urlmatch(netloc=r'(.*\.)?google\.com$', path=r'^/$')
+@remember_called
+def google_mock_count(url, request):
+    return 'Hello from Google'
+
+
 @urlmatch(scheme='http', netloc=r'(.*\.)?facebook\.com$')
 def facebook_mock(url, request):
+    return 'Hello from Facebook'
+
+
+@urlmatch(scheme='http', netloc=r'(.*\.)?facebook\.com$')
+@remember_called
+def facebook_mock_count(url, request):
     return 'Hello from Facebook'
 
 
@@ -261,3 +272,50 @@ class StreamTest(unittest.TestCase):
     def test_non_stream_request(self):
         r = requests.get('http://domain.com/')
         self.assertEqual(r.raw.read(), b'')
+
+
+class RememberCalledTest(unittest.TestCase):
+
+    @staticmethod
+    def several_calls(count, method, *args, **kwargs):
+        results = []
+        for _ in range(count):
+            results.append(method(*args, **kwargs))
+        return results
+
+    def test_several_calls(self):
+        with HTTMock(google_mock_count, facebook_mock_count):
+            results = self.several_calls(
+                3, requests.get, 'http://facebook.com/')
+
+        self.assertTrue(facebook_mock_count.call['called'])
+        self.assertEqual(facebook_mock_count.call['count'], 3)
+
+        self.assertFalse(google_mock_count.call['called'])
+        self.assertEqual(google_mock_count.call['count'], 0)
+
+        for r in results:
+            self.assertEqual(r.content, b'Hello from Facebook')
+
+        # Negative case: cleanup call data
+        with HTTMock(facebook_mock_count):
+            results = self.several_calls(
+                1, requests.get, 'http://facebook.com/')
+
+        self.assertEquals(facebook_mock_count.call['count'], 1)
+
+    @with_httmock(google_mock_count, facebook_mock_count)
+    def test_several_call_decorated(self):
+        results = self.several_calls(3, requests.get, 'http://facebook.com/')
+
+        self.assertTrue(facebook_mock_count.call['called'])
+        self.assertEqual(facebook_mock_count.call['count'], 3)
+
+        self.assertFalse(google_mock_count.call['called'])
+        self.assertEqual(google_mock_count.call['count'], 0)
+
+        for r in results:
+            self.assertEqual(r.content, b'Hello from Facebook')
+
+        self.several_calls(1, requests.get, 'http://facebook.com/')
+        self.assertEquals(facebook_mock_count.call['count'], 4)

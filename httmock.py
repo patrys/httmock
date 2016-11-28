@@ -103,6 +103,38 @@ def urlmatch(scheme=None, netloc=None, path=None, method=None, query=None):
     return decorator
 
 
+def handler_init_call(handler):
+    setattr(handler, 'call', {
+        'count': 0,
+        'called': False
+    })
+
+
+def handler_clean_call(handler):
+    if hasattr(handler, 'call'):
+        handler.call.update({
+            'count': 0,
+            'called': False
+        })
+
+
+def handler_called(handler, *args, **kwargs):
+    try:
+        return handler(*args, **kwargs)
+    finally:
+        handler.call['count'] += 1
+        handler.call['called'] = True
+
+
+def remember_called(func):
+    handler_init_call(func)
+
+    @wraps(func)
+    def inner(*args, **kwargs):
+        return handler_called(func, *args, **kwargs)
+    return inner
+
+
 def first_of(handlers, *args, **kwargs):
     for handler in handlers:
         res = handler(*args, **kwargs)
@@ -122,6 +154,9 @@ class HTTMock(object):
     def __enter__(self):
         self._real_session_send = requests.Session.send
         self._real_session_prepare_request = requests.Session.prepare_request
+
+        for handler in self.handlers:
+            handler_clean_call(handler)
 
         def _fake_send(session, request, **kwargs):
             response = self.intercept(request, **kwargs)
