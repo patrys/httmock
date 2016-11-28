@@ -134,7 +134,7 @@ class AllRequestsDecoratorTest(unittest.TestCase):
         def response_content(url, request):
             return {'status_code': 200, 'content': 'Oh hai'}
         with HTTMock(response_content):
-            r = requests.get('https://foo_bar')
+            r = requests.get('https://example.com/')
         self.assertEqual(r.status_code, 200)
         self.assertEqual(r.content, b'Oh hai')
 
@@ -143,7 +143,7 @@ class AllRequestsDecoratorTest(unittest.TestCase):
         def response_content(url, request):
             return 'Hello'
         with HTTMock(response_content):
-            r = requests.get('https://foo_bar')
+            r = requests.get('https://example.com/')
         self.assertEqual(r.content, b'Hello')
 
 
@@ -154,7 +154,7 @@ class AllRequestsMethodDecoratorTest(unittest.TestCase):
 
     def test_all_requests_response(self):
         with HTTMock(self.response_content):
-            r = requests.get('https://foo_bar')
+            r = requests.get('https://example.com/')
         self.assertEqual(r.status_code, 200)
         self.assertEqual(r.content, b'Oh hai')
 
@@ -164,7 +164,7 @@ class AllRequestsMethodDecoratorTest(unittest.TestCase):
 
     def test_all_str_response(self):
         with HTTMock(self.string_response_content):
-            r = requests.get('https://foo_bar')
+            r = requests.get('https://example.com/')
         self.assertEqual(r.content, b'Hello')
 
 
@@ -224,7 +224,7 @@ class ResponseTest(unittest.TestCase):
             return response(200, 'Foo', {'Set-Cookie': 'foo=bar;'},
                             request=request)
         with HTTMock(response_content):
-            r = requests.get('https://foo_bar')
+            r = requests.get('https://example.com/')
         self.assertEqual(len(r.cookies), 1)
         self.assertTrue('foo' in r.cookies)
         self.assertEqual(r.cookies['foo'], 'bar')
@@ -242,7 +242,7 @@ class ResponseTest(unittest.TestCase):
                     'elapsed': 5}
 
         with HTTMock(get_mock):
-            response = requests.get('http://foo_bar')
+            response = requests.get('http://example.com/')
             self.assertEqual(self.content, response.json())
 
     def test_mock_redirect(self):
