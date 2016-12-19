@@ -229,6 +229,21 @@ class ResponseTest(unittest.TestCase):
         self.assertTrue('foo' in r.cookies)
         self.assertEqual(r.cookies['foo'], 'bar')
 
+    def test_response_session_cookies(self):
+        @all_requests
+        def response_content(url, request):
+            return response(200, 'Foo', {'Set-Cookie': 'foo=bar;'},
+                            request=request)
+        session = requests.Session()
+        with HTTMock(response_content):
+            r = session.get('https://foo_bar')
+        self.assertEqual(len(r.cookies), 1)
+        self.assertTrue('foo' in r.cookies)
+        self.assertEqual(r.cookies['foo'], 'bar')
+        self.assertEqual(len(session.cookies), 1)
+        self.assertTrue('foo' in session.cookies)
+        self.assertEqual(session.cookies['foo'], 'bar')
+
     def test_python_version_encoding_differences(self):
         # Previous behavior would result in this test failing in Python3 due
         # to how requests checks for utf-8 JSON content in requests.utils with:

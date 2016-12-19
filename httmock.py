@@ -191,6 +191,8 @@ class HTTMock(object):
                     response = history.pop()
                     response.history = tuple(history)
 
+                session.cookies = response.cookies
+
                 return response
 
             return self._real_session_send(session, request, **kwargs)
