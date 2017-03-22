@@ -4,7 +4,7 @@ from requests import cookies
 import json
 import re
 import requests
-from requests import structures
+from requests import structures, utils
 import sys
 try:
     import urlparse
@@ -49,6 +49,7 @@ def response(status_code=200, content='', headers=None, reason=None, elapsed=0,
     res._content = content
     res._content_consumed = content
     res.headers = structures.CaseInsensitiveDict(headers or {})
+    res.encoding = utils.get_encoding_from_headers(res.headers)
     res.reason = reason
     res.elapsed = datetime.timedelta(elapsed)
     res.request = request

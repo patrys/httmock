@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 import requests
 import unittest
 
@@ -40,6 +42,17 @@ def facebook_mock(url, request):
 @remember_called
 def facebook_mock_count(url, request):
     return 'Hello from Facebook'
+
+
+@all_requests
+def charset_utf8(url, request):
+    return {
+        'content': u'Motörhead'.encode('utf-8'),
+        'status_code': 200,
+        'headers': {
+            'Content-Type': 'text/plain; charset=utf-8'
+        }
+    }
 
 
 def any_mock(url, request):
@@ -111,6 +124,13 @@ class MockTest(unittest.TestCase):
             return -1
         with HTTMock(response_content):
             self.assertRaises(TypeError, requests.get, 'http://example.com/')
+
+    def test_encoding_from_contenttype(self):
+        with HTTMock(charset_utf8):
+            r = requests.get('http://example.com/')
+        self.assertEqual(r.encoding, 'utf-8')
+        self.assertEqual(r.text, u'Motörhead')
+        self.assertEqual(r.content, r.text.encode('utf-8'))
 
 
 class DecoratorTest(unittest.TestCase):
