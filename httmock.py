@@ -107,7 +107,8 @@ def urlmatch(scheme=None, netloc=None, path=None, method=None, query=None):
 def handler_init_call(handler):
     setattr(handler, 'call', {
         'count': 0,
-        'called': False
+        'called': False,
+        'requests': []
     })
 
 
@@ -115,7 +116,8 @@ def handler_clean_call(handler):
     if hasattr(handler, 'call'):
         handler.call.update({
             'count': 0,
-            'called': False
+            'called': False,
+            'requests': []
         })
 
 
@@ -125,7 +127,7 @@ def handler_called(handler, *args, **kwargs):
     finally:
         handler.call['count'] += 1
         handler.call['called'] = True
-
+        handler.call['requests'].append(args[1])
 
 def remember_called(func):
     handler_init_call(func)
