@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-
 import requests
 import unittest
 
@@ -42,6 +41,11 @@ def facebook_mock(url, request):
 @remember_called
 def facebook_mock_count(url, request):
     return 'Hello from Facebook'
+
+@urlmatch(netloc=r'(.*\.)?google\.com$', path=r'^/$', method='POST')
+@remember_called
+def google_mock_store_requests(url, request):
+    return 'Posting at Google'
 
 
 @all_requests
@@ -354,3 +358,13 @@ class RememberCalledTest(unittest.TestCase):
 
         self.several_calls(1, requests.get, 'http://facebook.com/')
         self.assertEquals(facebook_mock_count.call['count'], 4)
+
+    def test_store_several_requests(self):
+        with HTTMock(google_mock_store_requests):
+            payload = {"query": "foo"}
+            requests.post('http://google.com', data=payload)
+
+        self.assertTrue(google_mock_store_requests.call['called'])
+        self.assertEqual(google_mock_store_requests.call['count'], 1)
+        request = google_mock_store_requests.call['requests'][0]
+        self.assertEqual(request.body, 'query=foo')
