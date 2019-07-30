@@ -194,7 +194,7 @@ class HTTMock(object):
                     response = history.pop()
                     response.history = tuple(history)
 
-                session.cookies = response.cookies
+                session.cookies.update(response.cookies)
 
                 return response
 
