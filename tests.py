@@ -353,7 +353,7 @@ class RememberCalledTest(unittest.TestCase):
             results = self.several_calls(
                 1, requests.get, 'http://facebook.com/')
 
-        self.assertEquals(facebook_mock_count.call['count'], 1)
+        self.assertEqual(facebook_mock_count.call['count'], 1)
 
     @with_httmock(google_mock_count, facebook_mock_count)
     def test_several_call_decorated(self):
@@ -369,7 +369,7 @@ class RememberCalledTest(unittest.TestCase):
             self.assertEqual(r.content, b'Hello from Facebook')
 
         self.several_calls(1, requests.get, 'http://facebook.com/')
-        self.assertEquals(facebook_mock_count.call['count'], 4)
+        self.assertEqual(facebook_mock_count.call['count'], 4)
 
     def test_store_several_requests(self):
         with HTTMock(google_mock_store_requests):
