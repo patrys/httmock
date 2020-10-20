@@ -1,3 +1,7 @@
+os: linux
+arch:
+ - amd64
+ - ppc64le
 language: python
 python:
     - 2.7
@@ -7,6 +11,10 @@ python:
     - 3.6
     - 3.7
     - 3.8
+jobs: 
+  exclude:
+    - arch: ppc64le
+      python: pypy
 install:
     - "pip install requests"
 script: nosetests
