@@ -14,10 +14,7 @@ except ImportError:
 if sys.version_info >= (3, 0, 0):
     from io import BytesIO
 else:
-    try:
-        from cStringIO import StringIO as BytesIO
-    except ImportError:
-        from StringIO import StringIO as BytesIO
+    from StringIO import StringIO as BytesIO
 
 
 binary_type = bytes
@@ -39,7 +36,7 @@ class Headers(object):
 
 
 def response(status_code=200, content='', headers=None, reason=None, elapsed=0,
-             request=None, stream=False):
+             request=None, stream=False, http_vsn=11):
     res = requests.Response()
     res.status_code = status_code
     if isinstance(content, (dict, list)):
@@ -64,6 +61,7 @@ def response(status_code=200, content='', headers=None, reason=None, elapsed=0,
         res.raw = BytesIO(content)
     else:
         res.raw = BytesIO(b'')
+    res.raw.version = http_vsn
 
     # normally this closes the underlying connection,
     #  but we have nothing to free.
@@ -231,7 +229,8 @@ class HTTMock(object):
                             res.get('reason'),
                             res.get('elapsed', 0),
                             request,
-                            stream=kwargs.get('stream', False))
+                            stream=kwargs.get('stream', False),
+                            http_vsn=res.get('http_vsn', 11))
         elif isinstance(res, (text_type, binary_type)):
             return response(content=res, stream=kwargs.get('stream', False))
         elif res is None:
