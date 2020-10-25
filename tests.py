@@ -66,7 +66,8 @@ def any_mock(url, request):
 def dict_any_mock(url, request):
     return {
         'content': 'Hello from %s' % (url.netloc,),
-        'status_code': 200
+        'status_code': 200,
+        'http_vsn': 10,
     }
 
 
@@ -136,6 +137,13 @@ class MockTest(unittest.TestCase):
         self.assertEqual(r.text, u'Motörhead')
         self.assertEqual(r.content, r.text.encode('utf-8'))
 
+    def test_has_raw_version(self):
+        with HTTMock(any_mock):
+            r = requests.get('http://example.com')
+        self.assertEqual(r.raw.version, 11)
+        with HTTMock(dict_any_mock):
+            r = requests.get('http://example.com')
+        self.assertEqual(r.raw.version, 10)
 
 class DecoratorTest(unittest.TestCase):
 
@@ -241,6 +249,11 @@ class ResponseTest(unittest.TestCase):
     def test_response_headers(self):
         r = response(200, None, {'Content-Type': 'application/json'})
         self.assertEqual(r.headers['content-type'], 'application/json')
+
+    def test_response_raw_version(self):
+        r = response(200, None, {'Content-Type': 'application/json'},
+                     http_vsn=10)
+        self.assertEqual(r.raw.version, 10)
 
     def test_response_cookies(self):
         @all_requests
