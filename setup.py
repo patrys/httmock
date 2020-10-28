@@ -3,9 +3,6 @@
 from setuptools import setup
 import os
 
-LICENSE = open(
-    os.path.join(os.path.dirname(__file__), 'LICENSE')).read().strip()
-
 DESCRIPTION = open(
     os.path.join(os.path.dirname(__file__), 'README.md')).read().strip()
 
@@ -22,9 +19,11 @@ setup(
         'Programming Language :: Python :: 2',
         'Programming Language :: Python :: 3',
         'Intended Audience :: Developers',
+        'License :: OSI Approved :: Apache Software License',
         'Topic :: Software Development :: Testing',
         'Operating System :: OS Independent'],
     install_requires=['requests >= 1.0.0'],
-    license=LICENSE,
+    license='Apache-2.0',
     long_description=DESCRIPTION,
+    long_description_content_type='text/markdown',
     test_suite='tests')
