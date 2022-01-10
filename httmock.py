@@ -9,7 +9,7 @@ import urllib.parse as urlparse
 from io import BytesIO
 
 
-class Headers(object):
+class Headers:
     def __init__(self, res):
         self.headers = res.headers
 
@@ -128,7 +128,7 @@ def first_of(handlers, *args, **kwargs):
             return res
 
 
-class HTTMock(object):
+class HTTMock:
     """
     Acts as a context manager to allow mocking
     """
@@ -222,7 +222,7 @@ class HTTMock(object):
             return None
         else:
             raise TypeError(
-                "Dont know how to handle response of type {0}".format(type(res)))
+                f"Dont know how to handle response of type {type(res)}")
 
 
 def with_httmock(*handlers):

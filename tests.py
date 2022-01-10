@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import requests
 import unittest
 
@@ -51,7 +50,7 @@ def google_mock_store_requests(url, request):
 @all_requests
 def charset_utf8(url, request):
     return {
-        'content': u'Motörhead'.encode('utf-8'),
+        'content': 'Motörhead'.encode(),
         'status_code': 200,
         'headers': {
             'Content-Type': 'text/plain; charset=utf-8'
@@ -60,12 +59,12 @@ def charset_utf8(url, request):
 
 
 def any_mock(url, request):
-    return 'Hello from %s' % (url.netloc,)
+    return f'Hello from {url.netloc}'
 
 
 def dict_any_mock(url, request):
     return {
-        'content': 'Hello from %s' % (url.netloc,),
+        'content': f'Hello from {url.netloc}',
         'status_code': 200,
         'http_vsn': 10,
     }
@@ -134,7 +133,7 @@ class MockTest(unittest.TestCase):
         with HTTMock(charset_utf8):
             r = requests.get('http://example.com/')
         self.assertEqual(r.encoding, 'utf-8')
-        self.assertEqual(r.text, u'Motörhead')
+        self.assertEqual(r.text, 'Motörhead')
         self.assertEqual(r.content, r.text.encode('utf-8'))
 
     def test_has_raw_version(self):
