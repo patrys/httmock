@@ -3,7 +3,7 @@ import requests
 import unittest
 
 from httmock import (all_requests, response, urlmatch, with_httmock, HTTMock,
-                     remember_called, text_type, binary_type)
+                     remember_called)
 
 
 @urlmatch(scheme='swallow')
@@ -84,8 +84,8 @@ class MockTest(unittest.TestCase):
         with HTTMock(any_mock):
             r = requests.get('http://domain.com/')
         self.assertTrue(isinstance(r, requests.Response))
-        self.assertTrue(isinstance(r.content, binary_type))
-        self.assertTrue(isinstance(r.text, text_type))
+        self.assertTrue(isinstance(r.content, bytes))
+        self.assertTrue(isinstance(r.text, str))
 
     def test_scheme_fallback(self):
         with HTTMock(unmatched_scheme, any_mock):
@@ -236,8 +236,8 @@ class ResponseTest(unittest.TestCase):
 
     def test_response_auto_json(self):
         r = response(0, self.content)
-        self.assertTrue(isinstance(r.content, binary_type))
-        self.assertTrue(isinstance(r.text, text_type))
+        self.assertTrue(isinstance(r.content, bytes))
+        self.assertTrue(isinstance(r.text, str))
         self.assertEqual(r.json(), self.content)
         r = response(0, self.content_list)
         self.assertEqual(r.json(), self.content_list)

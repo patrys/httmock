@@ -5,23 +5,8 @@ import json
 import re
 import requests
 from requests import structures, utils
-import sys
-try:
-    import urlparse
-except ImportError:
-    import urllib.parse as urlparse
-
-if sys.version_info >= (3, 0, 0):
-    from io import BytesIO
-else:
-    from StringIO import StringIO as BytesIO
-
-
-binary_type = bytes
-if sys.version_info >= (3, 0, 0):
-    text_type = str
-else:
-    text_type = unicode  # noqa
+import urllib.parse as urlparse
+from io import BytesIO
 
 
 class Headers(object):
@@ -41,7 +26,7 @@ def response(status_code=200, content='', headers=None, reason=None, elapsed=0,
     res.status_code = status_code
     if isinstance(content, (dict, list)):
         content = json.dumps(content).encode('utf-8')
-    if isinstance(content, text_type):
+    if isinstance(content, str):
         content = content.encode('utf-8')
     res._content = content
     res._content_consumed = content
@@ -231,7 +216,7 @@ class HTTMock(object):
                             request,
                             stream=kwargs.get('stream', False),
                             http_vsn=res.get('http_vsn', 11))
-        elif isinstance(res, (text_type, binary_type)):
+        elif isinstance(res, (str, bytes)):
             return response(content=res, stream=kwargs.get('stream', False))
         elif res is None:
             return None

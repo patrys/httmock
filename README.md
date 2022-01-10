@@ -1,7 +1,7 @@
 httmock
 =======
 
-A mocking library for `requests` for Python 2.7 and 3.4+.
+A mocking library for `requests` for Python 3.7+.
 
 Installation
 ------------
