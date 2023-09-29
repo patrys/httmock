@@ -39,6 +39,7 @@ def response(status_code=200, content='', headers=None, reason=None, elapsed=0,
              request=None, stream=False, http_vsn=11):
     res = requests.Response()
     res.status_code = status_code
+    res.headers = structures.CaseInsensitiveDict(headers or {})
     res.encoding = utils.get_encoding_from_headers(res.headers)
     if isinstance(content, (dict, list)):
         content = json.dumps(content).encode(res.encoding or 'utf-8')
@@ -46,7 +47,6 @@ def response(status_code=200, content='', headers=None, reason=None, elapsed=0,
         content = content.encode(res.encoding or 'utf-8')
     res._content = content
     res._content_consumed = content
-    res.headers = structures.CaseInsensitiveDict(headers or {})
     res.reason = reason
     res.elapsed = datetime.timedelta(elapsed)
     res.request = request

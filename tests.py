@@ -58,6 +58,15 @@ def charset_utf8(url, request):
         }
     }
 
+@all_requests
+def charset_ISO88591(url, request):
+    return {
+        'content': u'<div>google</div>'.encode('ISO-8859-1'),
+        'status_code': 200,
+        'headers': {
+            'Content-Type': 'text/html; charset=ISO-8859-1'
+        }
+    }
 
 def any_mock(url, request):
     return 'Hello from %s' % (url.netloc,)
@@ -136,6 +145,13 @@ class MockTest(unittest.TestCase):
         self.assertEqual(r.encoding, 'utf-8')
         self.assertEqual(r.text, u'Motörhead')
         self.assertEqual(r.content, r.text.encode('utf-8'))
+
+    def test_encoding_from_non_utf8_contenttype(self):
+        with HTTMock(charset_ISO88591):
+            r = requests.get('http://google.com/')
+        self.assertEqual(r.encoding, 'ISO-8859-1')
+        self.assertEqual(r.text, u'<div>google</div>')
+        self.assertEqual(r.content, r.text.encode('ISO-8859-1'))
 
     def test_has_raw_version(self):
         with HTTMock(any_mock):
