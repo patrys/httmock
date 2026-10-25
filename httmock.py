@@ -232,7 +232,8 @@ class HTTMock(object):
                             stream=kwargs.get('stream', False),
                             http_vsn=res.get('http_vsn', 11))
         elif isinstance(res, (text_type, binary_type)):
-            return response(content=res, stream=kwargs.get('stream', False))
+            return response(content=res, request=request,
+                            stream=kwargs.get('stream', False))
         elif res is None:
             return None
         else:

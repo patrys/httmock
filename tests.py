@@ -87,6 +87,20 @@ class MockTest(unittest.TestCase):
         self.assertTrue(isinstance(r.content, binary_type))
         self.assertTrue(isinstance(r.text, text_type))
 
+    def test_string_response_request_context(self):
+        for content in (u'Hello', b'Hello'):
+            for stream in (False, True):
+                request = requests.Request(
+                    'POST', 'https://example.com/resource',
+                    params={'q': 'a b'}, data='body').prepare()
+                with HTTMock(lambda url, request: content):
+                    r = requests.Session().send(request, stream=stream)
+                self.assertEqual(r.url,
+                                 'https://example.com/resource?q=a+b')
+                self.assertIs(r.request, request)
+                self.assertEqual(r.content, b'Hello')
+                self.assertEqual(r.raw.read(), b'Hello' if stream else b'')
+
     def test_scheme_fallback(self):
         with HTTMock(unmatched_scheme, any_mock):
             r = requests.get('http://example.com/')
