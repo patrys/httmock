@@ -147,6 +147,37 @@ class MockTest(unittest.TestCase):
 
 class DecoratorTest(unittest.TestCase):
 
+    def test_recursive_decorator_restores_session_methods(self):
+        self._check_recursive_decorator(raise_error=False)
+
+    def test_recursive_decorator_restores_session_methods_after_error(self):
+        self._check_recursive_decorator(raise_error=True)
+
+    def _check_recursive_decorator(self, raise_error):
+        original_send = requests.Session.send
+        original_prepare = requests.Session.prepare_request
+
+        @with_httmock(any_mock)
+        def recursive_request(depth):
+            if depth:
+                return recursive_request(depth - 1)
+            result = requests.get('http://example.com/')
+            self.assertEqual(result.content, b'Hello from example.com')
+            if raise_error:
+                raise ValueError('request failed')
+
+        try:
+            if raise_error:
+                with self.assertRaises(ValueError):
+                    recursive_request(2)
+            else:
+                recursive_request(2)
+            self.assertIs(requests.Session.send, original_send)
+            self.assertIs(requests.Session.prepare_request, original_prepare)
+        finally:
+            requests.Session.send = original_send
+            requests.Session.prepare_request = original_prepare
+
     @with_httmock(any_mock)
     def test_decorator(self):
         r = requests.get('http://example.com/')

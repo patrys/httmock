@@ -241,12 +241,10 @@ class HTTMock(object):
 
 
 def with_httmock(*handlers):
-    mock = HTTMock(*handlers)
-
     def decorator(func):
         @wraps(func)
         def inner(*args, **kwargs):
-            with mock:
+            with HTTMock(*handlers):
                 return func(*args, **kwargs)
         return inner
     return decorator
