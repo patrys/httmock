@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 import requests
 import unittest
+import gzip
+from io import BytesIO
 
 from httmock import (all_requests, response, urlmatch, with_httmock, HTTMock,
                      remember_called, text_type, binary_type)
@@ -336,6 +338,46 @@ class StreamTest(unittest.TestCase):
     def test_non_stream_request(self):
         r = requests.get('http://domain.com/')
         self.assertEqual(r.raw.read(), b'')
+
+    @with_httmock(any_mock)
+    def test_raw_read_decode_content(self):
+        for decode_content in (False, True):
+            r = requests.get('http://domain.com/', stream=True)
+            self.assertEqual(r.raw.read(decode_content=decode_content),
+                             b'Hello from domain.com')
+            self.assertEqual(r.raw.read(decode_content=decode_content), b'')
+
+    @with_httmock(dict_any_mock)
+    def test_raw_read_partial(self):
+        r = requests.get('http://domain.com/', stream=True)
+        self.assertEqual(r.raw.read(5, decode_content=True), b'Hello')
+        self.assertEqual(r.raw.read(amt=6, decode_content=True), b' from ')
+        self.assertEqual(r.raw.read(decode_content=True), b'domain.com')
+        self.assertEqual(r.raw.version, 10)
+
+    @with_httmock(any_mock)
+    def test_non_stream_raw_read_decode_content(self):
+        r = requests.get('http://domain.com/')
+        self.assertEqual(r.raw.read(decode_content=True), b'')
+
+    def test_raw_read_gzip(self):
+        content = b'Hello from a compressed response'
+        compressed = BytesIO()
+        with gzip.GzipFile(fileobj=compressed, mode='wb') as gzip_file:
+            gzip_file.write(content)
+        compressed = compressed.getvalue()
+
+        def gzip_mock(url, request):
+            return {'status_code': 200, 'content': compressed,
+                    'headers': {'Content-Encoding': 'gzip',
+                                'Content-Length': str(len(compressed))}}
+
+        with HTTMock(gzip_mock):
+            r = requests.get('http://domain.com/', stream=True)
+            self.assertEqual(r.raw.read(decode_content=False), compressed)
+            r = requests.get('http://domain.com/', stream=True)
+            self.assertEqual(r.raw.read(decode_content=True), content)
+            self.assertEqual(r.raw.read(decode_content=True), b'')
 
 
 class RememberCalledTest(unittest.TestCase):

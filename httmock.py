@@ -5,6 +5,7 @@ import json
 import re
 import requests
 from requests import structures, utils
+from requests.packages.urllib3.response import HTTPResponse
 import sys
 try:
     import urlparse
@@ -57,11 +58,12 @@ def response(status_code=200, content='', headers=None, reason=None, elapsed=0,
     if 'set-cookie' in res.headers:
         res.cookies.extract_cookies(cookies.MockResponse(Headers(res)),
                                     cookies.MockRequest(request))
-    if stream:
-        res.raw = BytesIO(content)
-    else:
-        res.raw = BytesIO(b'')
-    res.raw.version = http_vsn
+    res.raw = HTTPResponse(
+        body=BytesIO(content if stream else b''),
+        headers=res.headers if stream else None,
+        preload_content=False,
+        decode_content=False,
+        version=http_vsn)
 
     # normally this closes the underlying connection,
     #  but we have nothing to free.
