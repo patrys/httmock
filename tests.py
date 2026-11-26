@@ -170,6 +170,18 @@ class AllRequestsDecoratorTest(unittest.TestCase):
         self.assertEqual(r.status_code, 200)
         self.assertEqual(r.content, b'Oh hai')
 
+    def test_dict_response_defaults_to_ok(self):
+        @all_requests
+        def response_content(url, request):
+            return {'content': 'Oh hai'}
+
+        with HTTMock(response_content):
+            r = requests.get('https://example.com/')
+
+        self.assertEqual(r.status_code, 200)
+        self.assertTrue(r.ok)
+        self.assertEqual(r.content, b'Oh hai')
+
     def test_all_str_response(self):
         @all_requests
         def response_content(url, request):

@@ -223,7 +223,7 @@ class HTTMock(object):
         if isinstance(res, requests.Response):
             return res
         elif isinstance(res, dict):
-            return response(res.get('status_code'),
+            return response(res.get('status_code', self.STATUS_CODE),
                             res.get('content'),
                             res.get('headers'),
                             res.get('reason'),
