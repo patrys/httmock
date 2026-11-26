@@ -29,7 +29,7 @@ with HTTMock(google_mock):
 print r.content  # 'Feeling lucky, punk?'
 ```
 
-The `all_requests` decorator doesn't conditionally block real requests. If you return a dictionary, it will map to the `requests.Response` object returned:
+The `all_requests` decorator doesn't conditionally block real requests. If you return a dictionary, it will map to the `requests.Response` object returned. The status code defaults to 200 when the dictionary omits `status_code`:
 
 ```python
 from httmock import all_requests, HTTMock
